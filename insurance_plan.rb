@@ -14,7 +14,7 @@ class InsurancePlan
   # category of loss.
   #
   Coverage = Struct.new(
-    :category, :no_deductible, :coinsurance, :copay,
+    :category, :covered?, :no_deductible?, :coinsurance, :copay,
   )
   def validate_coverage(coverage)
     raise TypeError unless coverage.is_a?(Coverage)
@@ -67,7 +67,11 @@ class InsurancePlan
     input['coverages'].each do |cat, cov|
       cat = cat.to_sym
       coverage = Coverage.new(
-        cat, !!cov['no_deductible'], cov['coinsurance'], cov['copay']
+        cat,
+        !!cov['covered'],
+        !!cov['no_deductible'],
+        cov['coinsurance'],
+        cov['copay']
       )
       validate_coverage(coverage)
       @coverages[cat] = cov
@@ -81,6 +85,11 @@ class InsurancePlan
       raise "Coverage for #{claim.category} not defined for #{name}"
     end
 
+    if !coverage.covered?
+      record_payment(claim, :uncovered, false, to_pay)
+      return
+    end
+
     to_pay = pay_from_deductible(to_pay, claim, coverage)
     to_pay = pay_coverage(to_pay, claim, coverage)
     pay_oop(to_pay, claim)
@@ -89,7 +98,7 @@ class InsurancePlan
   # Pays out from the deductible. Returns the amount left to pay, and adds a
   # record to the payment_record.
   def pay_from_deductible(to_pay, claim, coverage)
-    return if coverage.no_deductible || to_pay == 0
+    return if coverage.no_deductible? || to_pay == 0
 
     ded_used = @payments.select { |rec|
       rec.from == :deductible && !rec.covered
