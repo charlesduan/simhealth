@@ -1,0 +1,10 @@
+name: GEHA HDHP
+deductible: 3000
+oop_max: 10000
+coverage:
+    primary_care_visit: { coinsurance: 0.05 }
+    specialist_visit:   { coinsurance: 0.05 }
+    urgent_care:        { coinsurance: 0.05 }
+    emergency_accidental: {coinsurance: 0.05 }
+    generic_drugs:      { coinsurance: 0.25 }
+
