@@ -35,6 +35,18 @@ module Distribution
         mean + sd * rho * Math.cos(theta)
       }
   },
+    'lognormal' => proc { |mean, sd|
+      mean, sd = mean.to_f, sd.to_f
+      raise "Invalid lognormal distribution" unless mean > 0 && sd > 0
+      phi = Math.sqrt(sd**2 + mean**2)
+      mu = Math.log(mean**2 / phi)
+      sigma = Math.sqrt(Math.log(1 + sd**2 / mean**2))
+      proc {
+        theta = 2 * Math::PI * rand()
+        rho = Math.sqrt(-2 * Math.log(1 - rand()))
+        Math.exp(mu + sigma * rho * Math.cos(theta))
+      }
+  },
     'binomial' => proc { |n, p|
       n, p = n.to_i, p.to_f
       raise "Invalid binomial distribution" unless n >= 1 && p > 0 && p < 1

@@ -5,7 +5,7 @@ require_relative 'claim'
 
 
 ip = InsurancePlan.new(
-  name: 'Plan',
+  'Plan',
   deductible: 200,
   premium: 500 * 26,
   oop_max: 3000,

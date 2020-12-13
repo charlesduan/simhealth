@@ -29,14 +29,16 @@ class InsurancePlan
     include ClaimCategories
     def initialize(category, covered, no_ded, coins, copay)
       raise "Invalid category #{category}" unless valid_category?(category)
-      if coins.nil?
-        raise TypeError unless copay.is_a?(Numeric)
-        raise TypeError unless copay >= 0
-      else
-        raise TypeError unless copay.nil?
-        raise TypeError unless coins.is_a?(Numeric)
-        raise TypeError unless coins >= 0
-        raise TypeError unless coins <= 1
+      if covered?
+        if coins.nil?
+          raise TypeError unless copay.is_a?(Numeric)
+          raise TypeError unless copay >= 0
+        else
+          raise TypeError unless copay.nil?
+          raise TypeError unless coins.is_a?(Numeric)
+          raise TypeError unless coins >= 0
+          raise TypeError unless coins <= 1
+        end
       end
       super(category, covered, no_ded, coins, copay)
     end
@@ -54,7 +56,7 @@ class InsurancePlan
 
   attr_reader :name, :payments
 
-  def initialize(name:, premium:, deductible:, oop_max:)
+  def initialize(name, premium:, deductible:, oop_max:)
     @name, @premium, @deductible, @oop_max = name, premium, deductible, oop_max
     @coverages = {}
   end
@@ -96,14 +98,16 @@ class InsurancePlan
     to_pay = claim.negotiated_amount
 
     to_pay = pay_from_deductible(to_pay, claim, coverage)
+    raise "Invalid to_pay #{to_pay}" if to_pay < 0
     to_pay = pay_coverage(to_pay, claim, coverage)
+    raise "Invalid to_pay #{to_pay}" if to_pay < 0
     pay_oop(to_pay, claim)
   end
 
   # Pays out from the deductible. Returns the amount left to pay, and adds a
   # record to the payment_record.
   def pay_from_deductible(to_pay, claim, coverage)
-    return if coverage.no_deductible? || to_pay == 0
+    return to_pay if coverage.no_deductible? || to_pay == 0
 
     ded_used = @payments.select { |rec|
       rec.from == :deductible && !rec.covered?
@@ -125,7 +129,9 @@ class InsurancePlan
     return 0 if to_pay == 0
     if coverage.coinsurance
       coinsurance = (to_pay * coverage.coinsurance).round
-      record_payment(claim, :coinsurance_covered, true, to_pay - coinsurance)
+      if to_pay > coinsurance
+        record_payment(claim, :coinsurance_covered, true, to_pay - coinsurance)
+      end
       return coinsurance
 
     elsif coverage.copay
