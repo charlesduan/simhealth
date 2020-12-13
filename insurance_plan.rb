@@ -24,18 +24,19 @@ class InsurancePlan
   #
   Coverage = Struct.new(
     :category, :covered?, :no_deductible?, :coinsurance, :copay,
-  )
-  def validate_coverage(coverage)
-    raise TypeError unless coverage.is_a?(Coverage)
-    raise TypeError unless Terms.include?(coverage.category)
-    if coverage.coinsurance.nil?
-      raise TypeError unless coverage.copay.is_a?(Numeric)
-      raise DomainError unless coverage.copay >= 0
-    else
-      raise TypeError unless coverage.copay.nil?
-      raise TypeError unless coverage.coinsurance.is_a?(Numeric)
-      raise DomainError unless coverage.coinsurance >= 0
-      raise DomainError unless coverage.coinsurance <= 1
+  ) do
+    def initialize(category, covered, no_ded, coins, copay)
+      raise TypeError unless Terms.include?(category)
+      if coins.nil?
+        raise TypeError unless copay.is_a?(Numeric)
+        raise DomainError unless copay >= 0
+      else
+        raise TypeError unless copay.nil?
+        raise TypeError unless coins.is_a?(Numeric)
+        raise DomainError unless coins >= 0
+        raise DomainError unless coins <= 1
+      end
+      super(category, covered, no_ded, coins, copay)
     end
   end
 
@@ -45,18 +46,17 @@ class InsurancePlan
   # objects if payment comes from multiple sources (e.g., deductible, copay,
   # etc.).
   #
-  Payment = Struct.new(:claim, :from, :covered, :amount)
-
-  def validate_payment(payment)
-    raise TypeError unless payment.is_a?(Payment)
-    raise TypeError unless payment.claim.is_a?(Claim)
-    raise TypeError unless payment.from.is_a?(Symbol)
-    raise DomainError unless payment.amount > 0
+  Payment = Struct.new(:claim, :from, :covered?, :amount) do
+    def initialize(claim, from, covered, amount)
+      raise TypeError unless claim.is_a?(Claim) || from == :premium
+      raise TypeError unless from.is_a?(Symbol)
+      raise DomainError unless amount > 0
+      super(claim, from, covered, amount)
+    end
   end
 
   def record_payment(*args)
     @payments.push(Payment.new(*args))
-    validate_payment(@payments.last)
   end
 
   ########################################################################
@@ -67,22 +67,16 @@ class InsurancePlan
 
   attr_reader :name, :payments
 
-  def initialize(input)
-    @name = input['name']
-    @deductible = input['deductible']
-    @oop_max = input['oop_max']
+  def initialize(name:, premium:, deductible:, oop_max:)
+    @name, @premium, @deductible, @oop_max = name, premium, deductible, oop_max
     @coverages = {}
-    input['coverages'].each do |cat, cov|
-      cat = cat.to_sym
-      coverage = Coverage.new(
-        cat,
-        !!cov['covered'],
-        !!cov['no_deductible'],
-        cov['coinsurance'],
-        cov['copay']
-      )
-      validate_coverage(coverage)
-      @coverages[cat] = cov
+  end
+
+  def add_coverage(category:, covered:, no_deductible:, coinsurance:, copay:)
+    coverage = Coverage.new(
+      category, covered, no_deductible, coinsurance, copay
+    )
+    @coverages[category] = cov
     end
   end
 
@@ -119,7 +113,7 @@ class InsurancePlan
     return if coverage.no_deductible? || to_pay == 0
 
     ded_used = @payments.select { |rec|
-      rec.from == :deductible && !rec.covered
+      rec.from == :deductible && !rec.covered?
     }.map(&:amount).sum
     return to_pay unless ded_used < @deductible
 
@@ -160,7 +154,7 @@ class InsurancePlan
   #
   def pay_oop(to_pay, claim)
     paid_oop = @payments.select { |rec|
-      !rec.covered && rec.from != :premium && rec.from != :balance_billing
+      !rec.covered? && rec.from != :premium && rec.from != :balance_billing
     }.map(&:amount).sum
     oop_left = @oop_max - paid_oop
     if oop_left <= 0
@@ -189,8 +183,10 @@ class InsurancePlan
   # paid), and accumulates the payments made, returning them as an array of
   # Payment objects.
   #
+  # This method also adds a payment for the yearly premium.
+  #
   def pay_year(claims)
-    @payments = []
+    @payments = [ Payment.new(nil, :premium, false, @premium) ]
     claims.each do |claim|
       pay(claim)
     end
