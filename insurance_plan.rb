@@ -1,5 +1,6 @@
-require 'terms'
-require 'claim'
+require_relative 'claim_categories'
+require_relative 'claim'
+require_relative 'payment'
 
 #
 # Represents an insurance plan that pays out claims as it receives them. The
@@ -25,33 +26,19 @@ class InsurancePlan
   Coverage = Struct.new(
     :category, :covered?, :no_deductible?, :coinsurance, :copay,
   ) do
+    include ClaimCategories
     def initialize(category, covered, no_ded, coins, copay)
-      raise TypeError unless Terms.include?(category)
+      raise "Invalid category #{category}" unless valid_category?(category)
       if coins.nil?
         raise TypeError unless copay.is_a?(Numeric)
-        raise DomainError unless copay >= 0
+        raise TypeError unless copay >= 0
       else
         raise TypeError unless copay.nil?
         raise TypeError unless coins.is_a?(Numeric)
-        raise DomainError unless coins >= 0
-        raise DomainError unless coins <= 1
+        raise TypeError unless coins >= 0
+        raise TypeError unless coins <= 1
       end
       super(category, covered, no_ded, coins, copay)
-    end
-  end
-
-  #
-  # Payment represents a payment made by either the insurance plan or the
-  # insured person regarding a claim. Each claim may generate multiple Payment
-  # objects if payment comes from multiple sources (e.g., deductible, copay,
-  # etc.).
-  #
-  Payment = Struct.new(:claim, :from, :covered?, :amount) do
-    def initialize(claim, from, covered, amount)
-      raise TypeError unless claim.is_a?(Claim) || from == :premium
-      raise TypeError unless from.is_a?(Symbol)
-      raise DomainError unless amount > 0
-      super(claim, from, covered, amount)
     end
   end
 
@@ -72,12 +59,19 @@ class InsurancePlan
     @coverages = {}
   end
 
-  def add_coverage(category:, covered:, no_deductible:, coinsurance:, copay:)
+  def add_coverage(
+    category, coinsurance: nil, copay: nil,
+    covered: true, no_deductible: false
+  )
     coverage = Coverage.new(
       category, covered, no_deductible, coinsurance, copay
     )
-    @coverages[category] = cov
-    end
+    raise "Duplicate coverage for #{category}" if @coverages[category]
+    @coverages[category] = coverage
+  end
+
+  def covered_categories
+    return @coverages.keys
   end
 
   ########################################################################
@@ -90,17 +84,16 @@ class InsurancePlan
   # Pays a single claim.
   #
   def pay(claim)
-    @payments
-    to_pay = claim.amount
     coverage = @coverages[claim.category]
     unless coverage
       raise "Coverage for #{claim.category} not defined for #{name}"
     end
 
     if !coverage.covered?
-      record_payment(claim, :uncovered, false, to_pay)
+      record_payment(claim, :uncovered, false, claim.oop_amount)
       return
     end
+    to_pay = claim.negotiated_amount
 
     to_pay = pay_from_deductible(to_pay, claim, coverage)
     to_pay = pay_coverage(to_pay, claim, coverage)
@@ -129,6 +122,7 @@ class InsurancePlan
   end
 
   def pay_coverage(to_pay, claim, coverage)
+    return 0 if to_pay == 0
     if coverage.coinsurance
       coinsurance = (to_pay * coverage.coinsurance).round
       record_payment(claim, :coinsurance_covered, true, to_pay - coinsurance)
@@ -153,6 +147,7 @@ class InsurancePlan
   # payments should be accounted for.
   #
   def pay_oop(to_pay, claim)
+    return if to_pay == 0
     paid_oop = @payments.select { |rec|
       !rec.covered? && rec.from != :premium && rec.from != :balance_billing
     }.map(&:amount).sum

@@ -1,6 +1,20 @@
+require_relative 'distribution'
+
+#
+# Simulates a full year of claims across multiple insurance plans. This class is
+# the top-level one for managing simulations.
+#
 class YearSimulator
 
   include Distribution
+
+
+
+  ########################################################################
+  #
+  # Initialization
+  #
+  ########################################################################
 
   def initialize
     @claim_simulators = []
@@ -12,13 +26,46 @@ class YearSimulator
     @simulated_claims = []
   end
 
+  #
+  # Adds a claim simulator for generating claims.
+  #
   def add_claim_simulator(cs)
     @claim_simulators.push(cs)
   end
 
+  #
+  # Adds an insurance plan to this simulator.
+  #
   def add_insurance_plan(ip)
     @simulations[ip] = []
   end
+
+  def insurance_plans
+    @simulations.keys
+  end
+
+  #
+  # Ensures that all the insurance plans have coverage for all the possible
+  # claims to be generated.
+  #
+  def validate
+    cats = @claim_simulators.map { |cs| cs.possible_categories }.flatten.uniq
+    insurance_plans.each do |ip|
+      ip_cats = ip.covered_categories
+      missing = cats - ip_cats
+      unless missing.empty?
+        raise "Insurance plan #{ip.name} is missing #{missing.join(", ")}"
+      end
+    end
+  end
+
+
+
+  ########################################################################
+  #
+  # Simulation
+  #
+  ########################################################################
 
   #
   # Simulates a year of claims. It does so by running each claim simulator to
@@ -38,11 +85,18 @@ class YearSimulator
   def simulate_coverage
     claims = simulate_claims
     @simulated_claims.push(claims)
-    @simulations.keys.each do |ip|
+    insurance_plans.each do |ip|
       payments = ip.simulate(claims)
       @simulations[ip].push(collect_stats(payments))
     end
   end
+
+
+  ########################################################################
+  #
+  # Collecting statistics
+  #
+  ########################################################################
 
   #
   # Returns an object of statistics for this set of payments from the year.
