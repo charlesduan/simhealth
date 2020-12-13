@@ -1,6 +1,15 @@
 require 'terms'
 require 'claim'
 
+#
+# Represents an insurance plan that pays out claims as it receives them. The
+# class is stateful in that it maintains a record of claims as it pays them; it
+# must do so because items like the deductible and out-of-pocket maximum depend
+# on the state of the previously paid claims.
+#
+# The main entry point to this class is the +pay_year+ method, which applies a
+# full year of claims to the class.
+#
 class InsurancePlan
 
   ########################################################################
@@ -56,13 +65,12 @@ class InsurancePlan
   #
   ########################################################################
 
-  attr_reader :name
+  attr_reader :name, :payments
 
   def initialize(input)
     @name = input['name']
     @deductible = input['deductible']
     @oop_max = input['oop_max']
-    @payments = []
     @coverages = {}
     input['coverages'].each do |cat, cov|
       cat = cat.to_sym
@@ -78,7 +86,17 @@ class InsurancePlan
     end
   end
 
+  ########################################################################
+  #
+  # PAYING A CLAIM
+  #
+  ########################################################################
+
+  #
+  # Pays a single claim.
+  #
   def pay(claim)
+    @payments
     to_pay = claim.amount
     coverage = @coverages[claim.category]
     unless coverage
@@ -159,5 +177,24 @@ class InsurancePlan
     end
   end
 
+  ########################################################################
+  #
+  # PAYING A YEAR OF CLAIMS
+  #
+  ########################################################################
+
+  #
+  # Given an array of claims for a full year, pays each one. This method resets
+  # the state of the class (starting the year with a blank slate of no claims
+  # paid), and accumulates the payments made, returning them as an array of
+  # Payment objects.
+  #
+  def pay_year(claims)
+    @payments = []
+    claims.each do |claim|
+      pay(claim)
+    end
+    return @payments
+  end
 end
 

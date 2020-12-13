@@ -1,65 +1,63 @@
-require 'distribution'
-
 
 Claim = Struct.new(
-  :category, :oop_amount, :negotiated_amount
+  :name, :category, :oop_amount, :negotiated_amount
 )
 
 
 class ClaimSimulator
 
-  #
-  # Each distribution is a proc that takes a number of arguments defining the
-  # distribution and returns a proc that generates a random output for the
-  # distribution.
-  #
-  DISTRIBUTIONS = {
-    'fixed' => proc { |count|
-      count = count.to_i
-      proc { count }
-  },
-    'uniform' => proc { |min, max|
-      min = min.to_i
-      range = max.to_i - min
-      proc { rand(range) + min }
-  },
-    'lognormal' => proc { |mean, sd|
-      Distribution::Lognormal.rng(mean.to_f, sd.to_f)
-  },
-    'binomial' => proc { |n, p|
-      n, p = n.to_i, p.to_f
-      proc { (1..n).map { |x| rand() <= p ? 1 : 0 }.sum }
-  },
-  }
-
-  #
-  # Parses a distribution specification and returns the generator proc.
-  #
-  def parse_distribution(text)
-    words = text.split(/\s+/)
-    first_word = words.shift
-    if words.length == 0 && first_word =~ /^\d+/
-      return DISTRIBUTIONS['fixed'].call(first_word)
-    else
-      distrib = DISTRIBUTIONS[first_word]
-      raise "Unknown distribution #{first_word}" unless distrib
-      return distrib.call(*words)
-    end
-  end
+  include Distribution
 
   #
   # Records the conditional probability of a particular claim
+  #
   ClaimProbability = Struct.new(
-    :category, :oop_distrib, :negotiated_distrib
+    :category, :prob_rng, :oop_rng, :negotiated_rng
   )
 
-  def add_claim
+  #
+  # Adds a conditional claim probability to this claim generator.
+  #
+  def add_claim_prob(category, prob_distrib, oop_distrib, negotiated_distrib)
+    @claim_probabilities.push(ClaimProbability.new(
+      category,
+      parse_distribution(prob_distrib),
+      parse_distribution(oop_distrib),
+      parse_distribution(negotiated_distrib)
+    ))
+  end
+
   def initialize(name, distrib)
     @name = data['name']
     @rng = parse_distribution(distrib)
+    @claim_probabilities = []
   end
 
+  #
+  # Generates a set of claims, based on the baseline probability for this claim
+  # generator and the conditional probabilities for each resulting claim.
+  def simulate
+    claims = []
 
+    # How many baseline events occur?
+    @rng.call.times do
 
+      # For each one, iterate through each possible claim generated
+      @claim_probabilities.each do |cp|
+
+        # How many of this type of claim are conditionally generated?
+        cp.prob_rng.times do
+          claims.push(Claim.new(
+            @name,
+            cp.category,
+            cp.oop_rng.call,
+            cp.negotiated_rng.call,
+          ))
+        end
+      end
+    end
+
+    return claims
+  end
 
 end
