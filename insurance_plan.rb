@@ -42,6 +42,16 @@ class InsurancePlan
       end
       super(category, covered, no_ded, coins, copay)
     end
+
+    def to_s
+      if !covered?
+        "Coverage #{category}: not covered"
+      elsif copay
+        "Coverage #{category}: $#{copay}"
+      else
+        "Coverage #{category}: #{(coinsurance * 100).to_i}%"
+      end
+    end
   end
 
   def record_payment(*args)
@@ -74,6 +84,13 @@ class InsurancePlan
 
   def covered_categories
     return @coverages.keys
+  end
+
+  def to_s
+    s = "Insurance plan #@name:\n"
+    s += "  #@premium/#@deductible/#@oop_max\n"
+    @coverages.each do |cat, coverage| s += "  #{coverage}\n" end
+    return s
   end
 
   ########################################################################

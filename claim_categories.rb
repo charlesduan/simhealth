@@ -9,6 +9,7 @@ module ClaimCategories
     :primary_care_visit,
     :specialist_visit,
     :diagnostic_test,
+    :diagnostic_test_stat,
     :imaging,
     :generic_drugs,
     :preferred_brand_drugs,
@@ -20,6 +21,7 @@ module ClaimCategories
     :emergency_medical_transportation,
     :urgent_care,
     :inpatient_hospital,
+    :inpatient_surgery,
     :mental_outpatient,
     :mental_inpatient,
     :home_health_care,
@@ -27,9 +29,11 @@ module ClaimCategories
     :habilitation_services,
     :skilled_nursing_care,
     :durable_medical_equipment,
-    :childrens_eye_exam,
+    :eye_exam,
     :childrens_glasses,
-    :childrens_dental_checkup,
+    :dental_checkup,
+    :dental_b,
+    :dental_c,
   ]
 
   def valid_category?(term)

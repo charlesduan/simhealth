@@ -17,7 +17,7 @@ module Distribution
   },
     'uniform' => proc { |min, max|
       min = min.to_i
-      range = max.to_i - min
+      range = max.to_i - min + 1
       raise "Invalid uniform distribution" unless range > 1
       proc { rand(range) + min }
   },

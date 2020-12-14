@@ -55,6 +55,16 @@ class ClaimSimulator
     @claim_probabilities = []
   end
 
+  attr_reader :name
+
+  def to_s
+    s = "Claim simulator #{@name}:\n"
+    @claim_probabilities.each do |cp|
+      s += "  #{cp.category}\n"
+    end
+    return s
+  end
+
   #
   # Returns an array of possible categories that this ClaimSimulator could
   # produce.

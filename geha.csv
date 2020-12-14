@@ -1,0 +1,9 @@
+name,premium,rewards,hsa_value,dental_checkup,eye_exam,primary_care_visit,specialist_visit,deductible,oop_max,urgent_care,emergency_room_care,inpatient_hospital,diagnostic_test,imaging,inpatient_surgery,outpatient_surgery,generic_drugs,preferred_brand_drugs,diagnostic_test_stat,dental_b,dental_c
+Elevate+Dental,172,1000,0,0,0,10,25,1000,14000,50,0.25,0.25,0.25,0.25,250,0.25,4,0.5,0.25,0.45,0.65
+HDHP,160,150,1800,0,5,0.05,0.05,3000,10000,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.25,0.25,0.05,uncovered,uncovered
+Standard+Dental,205,0,0,0,5,15,30,700,13000,35,0.15,0.15,0,0.15,0.15,0.15,7,0.5,0.15,0.45,0.65
+Elevate Plus+Dental,227,1000,0,0,0,20,35,0,12000,50,150,1000,0,50,200,200,4,80,0,0.45,0.65
+High+Dental,354,0,0,0,5,20,20,700,10000,35,0.1,0.11,0,0.1,0.1,0.1,7,0.5,0.1,0.45,0.65
+Standard,205,0,0,0.5,5,15,30,700,13000,35,0.15,0.15,0,0.15,0.15,0.15,7,0.5,0.15,uncovered,uncovered
+BCBS Standard,340,0,0,0,uncovered,25,35,700,10000,30,0.15,0.16,0.15,0.15,0.15,0.15,7.5,0.3,0.15,0.45,0.65
+FEP BlueFocus,166,0,0,0,uncovered,10,10,1000,15000,25,0.3,0.3,0.3,0.3,0.3,0.3,5,0.4,0.3,0.45,0.65
