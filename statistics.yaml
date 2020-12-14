@@ -1,0 +1,12 @@
+urgent_care:
+    oop_amount: lognormal 100 10
+
+ER:
+    emergency_room_visit:
+        oop_amount: lognormal 1500 750
+
+    diagnostic_test:
+        oop_amount: lognormal 300 50
+    inpatient_visit:
+        distribution: coinflip 0.107
+
