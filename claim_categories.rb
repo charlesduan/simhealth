@@ -9,12 +9,14 @@ module ClaimCategories
     :primary_care_visit,
     :specialist_visit,
     :diagnostic_test,
+    :xray, :bloodwork, # These are subcategories of :diagnostic_test
     :diagnostic_test_stat,
     :imaging,
     :generic_drugs,
     :preferred_brand_drugs,
     :non_preferred_brand_drugs,
     :specialty_drugs,
+    :tier1, :tier2, :tier3, :tier4, # Synonyms for the above
     :outpatient_surgery_facility,
     :outpatient_surgery,
     :emergency_room_care,

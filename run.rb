@@ -5,11 +5,11 @@ require_relative 'year_simulator'
 
 ys = YearSimulator.new
 
-ParseTables.parse_claim_simulators('statistics.yaml').each do |cs|
+ParseTables.parse_claim_simulators('events-2022.yaml').each do |cs|
   ys.add_claim_simulator(cs)
 end
 
-ParseTables.parse_plans('geha.csv').each do |ip|
+ParseTables.parse_plans('plans-2022.csv').each do |ip|
   ys.add_insurance_plan(ip)
 end
 

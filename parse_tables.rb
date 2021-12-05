@@ -18,16 +18,25 @@ class ParseTables
           deductible: row.delete('deductible').to_i,
           oop_max: row.delete('oop_max').to_i
         )
+
+        #
+        # The column no_deductibles should contain a space_separated list of
+        # coverages for which the deductible does not apply.
+        #
+        no_deductibles = (
+          row.delete('no_deductibles') || ''
+        ).split(/\s+/).map(&:to_sym)
         row.each do |key, val|
           key = key.to_sym
+          no_ded = no_deductibles.include?(key)
           if val == 'uncovered'
             ip.add_coverage(key, covered: false)
           elsif val !~ /^[\d.]+$/
             raise "Invalid value #{key}: #{val}"
           elsif val.to_f < 1
-            ip.add_coverage(key, coinsurance: val.to_f)
+            ip.add_coverage(key, coinsurance: val.to_f, no_deductible: no_ded)
           else
-            ip.add_coverage(key, copay: val.to_i)
+            ip.add_coverage(key, copay: val.to_i, no_deductible: no_ded)
           end
         end
         plans.push(ip)
